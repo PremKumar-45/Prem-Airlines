@@ -1,0 +1,34 @@
+{% extends 'main.html' %}
+{% block content %}
+<div class="wrap narrow">
+    <div class="steps"><span class="step done">1. Passenger</span><span class="step done">2. Payment</span><span class="step on">3. Ticket</span></div>
+    <div class="ticket">
+        <div class="ticket-head">
+            <span class="brand-text">Prem<em>Airlines</em></span>
+            <span class="badge paid">PAID</span>
+        </div>
+        <div class="ticket-route">
+            <div><small>From</small><strong>{{ booking.flight.source }}</strong></div>
+            <div class="route-line"><span>&#9992;</span></div>
+            <div><small>To</small><strong>{{ booking.flight.destination }}</strong></div>
+        </div>
+        <div class="ticket-grid">
+            <div><small>Passenger</small><strong>{{ booking.passenger_name }}</strong></div>
+            <div><small>Flight</small><strong>{{ booking.flight.fligt_number }}</strong></div>
+            <div><small>Seat</small><strong>{{ booking.seat_number }}</strong></div>
+            <div><small>Class</small><strong>{{ booking.get_travel_class_display }}</strong></div>
+            <div><small>Meal</small><strong>{{ booking.get_meal_display }}</strong></div>
+            <div><small>Extra Baggage</small><strong>{% if booking.extra_baggage %}+{% widthratio booking.extra_baggage 1 5 %} kg{% else %}None{% endif %}</strong></div>
+            <div><small>Departure</small><strong>{{ booking.flight.departure|date:"d M Y, H:i" }}</strong></div>
+            <div><small>Arrival</small><strong>{{ booking.flight.arrival|date:"d M Y, H:i" }}</strong></div>
+            <div><small>Amount Paid</small><strong>&#8377;{{ booking.amount|floatformat:0 }}</strong></div>
+            <div><small>Payment Method</small><strong>{{ booking.get_payment_method_display }}</strong></div>
+            <div><small>Reference</small><strong>{{ booking.payment_reference }}</strong></div>
+        </div>
+    </div>
+    <div class="actions">
+        <a href="{% url 'mybookings' %}" class="btn btn-ghost">My Trips</a>
+        <button onclick="window.print()" class="btn btn-gold">Print Ticket</button>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends 'main.html' %}
+{% block content %}
+<div class="wrap">
+    <h2 class="section-title">My Trips</h2>
+    {% for i in data %}
+    <article class="flight">
+        <div class="flight-airline">
+            <span class="tag">{{ i.flight.airline }}</span>
+            <strong>{{ i.flight.fligt_number }}</strong>
+            {% if i.is_paid %}<span class="badge paid">PAID</span>{% else %}<span class="badge pending">PAYMENT PENDING</span>{% endif %}
+        </div>
+        <div class="flight-route">
+            <div><span class="city">{{ i.flight.source }}</span><span class="time">{{ i.flight.departure|date:"d M, H:i" }}</span></div>
+            <div class="route-line"><span>&#9992;</span></div>
+            <div><span class="city">{{ i.flight.destination }}</span><span class="time">{{ i.flight.arrival|date:"d M, H:i" }}</span></div>
+        </div>
+        <div class="flight-buy">
+            <span class="meta">{{ i.passenger_name }} &middot; Seat {{ i.seat_number }} &middot; {{ i.get_travel_class_display }}</span>
+            <span class="price">&#8377;{{ i.amount|floatformat:0 }}</span>
+            <div class="row">
+                {% if i.is_paid %}
+                    <a href="{% url 'ticket' i.id %}" class="btn btn-gold sm">View Ticket</a>
+                {% else %}
+                    <a href="{% url 'payment' i.id %}" class="btn btn-gold sm">Pay Now</a>
+                {% endif %}
+                <form action="{% url 'cancel' i.id %}" method="POST" onsubmit="return confirm('Cancel this booking?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-ghost sm">Cancel</button>
+                </form>
+            </div>
+        </div>
+    </article>
+    {% empty %}
+    <div class="card empty"><p>You have not booked any flight yet.</p><a href="{% url 'home' %}" class="btn btn-gold">Find a Flight</a></div>
+    {% endfor %}
+</div>
+{% endblock %}

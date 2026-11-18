@@ -1,0 +1,153 @@
+{% extends 'main.html' %}
+{% load static %}
+{% block content %}
+<section class="hero">
+    <div class="hero-inner">
+        <p class="eyebrow">Welcome aboard</p>
+        <h1>Fly <span class="gold">premium</span> with Prem Airlines</h1>
+        <p class="lead">Search flights, pick your seat and pay securely, all in one place.</p>
+
+        <form action="{% url 'home' %}" method="GET" class="search-bar" id="searchform">
+            <div class="field">
+                <label>From</label>
+                <input type="text" name="source" list="citylist" placeholder="Origin city" value="{{ request.GET.source }}" required autocomplete="off">
+            </div>
+            <button type="button" class="swap" id="swap" title="Swap cities" aria-label="Swap cities">&#8646;</button>
+            <div class="field">
+                <label>To</label>
+                <input type="text" name="destination" list="citylist" placeholder="Destination city" value="{{ request.GET.destination }}" required autocomplete="off">
+            </div>
+            <div class="field">
+                <label>Departure</label>
+                <input type="date" name="departure" min="{{ today }}" value="{{ request.GET.departure }}">
+            </div>
+            <button type="submit" class="btn btn-gold">Search Flights</button>
+            <datalist id="citylist">{% for c in cities %}<option value="{{ c }}">{% endfor %}</datalist>
+        </form>
+    </div>
+</section>
+
+<div class="wrap">
+{% if searched %}
+    <div class="strip">
+        {% for d in strip %}
+        <a class="strip-day {% if request.GET.departure == d.date|date:'Y-m-d' %}on{% endif %}"
+           href="?source={{ request.GET.source|urlencode }}&destination={{ request.GET.destination|urlencode }}&departure={{ d.date|date:'Y-m-d' }}">
+            <span>{{ d.date|date:"D, d M" }}</span>
+            <strong>{% if d.low %}&#8377;{{ d.low|floatformat:0 }}{% else %}&mdash;{% endif %}</strong>
+        </a>
+        {% endfor %}
+    </div>
+
+    <div class="results-layout">
+        <form method="GET" class="filters card">
+            <input type="hidden" name="source" value="{{ request.GET.source }}">
+            <input type="hidden" name="destination" value="{{ request.GET.destination }}">
+            <input type="hidden" name="departure" value="{{ request.GET.departure }}">
+            <h3>Filters</h3>
+            <label>Sort by</label>
+            <select name="sort">
+                {% for key, val in sorts.items %}<option value="{{ key }}" {% if sort == key %}selected{% endif %}>{{ val.1 }}</option>{% endfor %}
+            </select>
+            <label>Airline</label>
+            <select name="airline">
+                <option value="">All airlines</option>
+                {% for a in airlines %}<option value="{{ a }}" {% if airline == a %}selected{% endif %}>{{ a }}</option>{% endfor %}
+            </select>
+            <label>Departure time</label>
+            <select name="slot">
+                <option value="">Any time</option>
+                <option value="night" {% if slot == 'night' %}selected{% endif %}>Early (before 5 AM)</option>
+                <option value="morning" {% if slot == 'morning' %}selected{% endif %}>Morning (5 AM - 12 PM)</option>
+                <option value="afternoon" {% if slot == 'afternoon' %}selected{% endif %}>Afternoon (12 - 5 PM)</option>
+                <option value="evening" {% if slot == 'evening' %}selected{% endif %}>Evening (after 5 PM)</option>
+            </select>
+            <label>Max price (&#8377;)</label>
+            <input type="number" name="max_price" min="0" step="500" placeholder="No limit" value="{{ max_price }}">
+            <label class="check"><input type="checkbox" name="nonstop" value="1" {% if nonstop %}checked{% endif %}> Non-stop only</label>
+            <button type="submit" class="btn btn-gold block">Apply</button>
+            <a class="reset" href="?source={{ request.GET.source|urlencode }}&destination={{ request.GET.destination|urlencode }}&departure={{ request.GET.departure }}">Reset filters</a>
+        </form>
+
+        <div>
+            <h2 class="section-title">{{ request.GET.source|title }} &rarr; {{ request.GET.destination|title }}
+                <span class="count">{{ count }} flight{{ count|pluralize }}</span></h2>
+            {% for i in flights %}
+            <article class="flight">
+                <div class="flight-airline">
+                    <span class="tag">{{ i.airline }}</span>
+                    <strong>{{ i.fligt_number }}</strong>
+                    <span class="meta">{{ i.aircraft }}</span>
+                </div>
+                <div class="flight-route">
+                    <div>
+                        <span class="city">{{ i.departure|date:"H:i" }}</span>
+                        <span class="time">{{ i.source }} &middot; {{ i.departure|date:"D, d M" }}</span>
+                    </div>
+                    <div class="route-mid">
+                        <span class="dur">{{ i.duration_display }}</span>
+                        <div class="route-line"><span>&#9992;</span></div>
+                        <span class="dur {% if i.stops %}stop{% endif %}">{{ i.stops_display }}</span>
+                    </div>
+                    <div>
+                        <span class="city">{{ i.arrival|date:"H:i" }}</span>
+                        <span class="time">{{ i.destination }} &middot; {{ i.arrival|date:"D, d M" }}</span>
+                    </div>
+                </div>
+                <div class="flight-buy">
+                    <span class="price">&#8377;{{ i.price|floatformat:0 }}</span>
+                    <span class="perks">{% if i.meal_included %}<em>Meal included</em>{% endif %}</span>
+                    <a href="{% url 'book' i.id %}" class="btn btn-gold">Book Now</a>
+                </div>
+            </article>
+            {% empty %}
+            <div class="card empty">
+                <p>No flights found for your search. Try different dates, cities or filters.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+{% else %}
+    <div class="stats">
+        <div><strong>{{ stats.flights }}+</strong><span>Upcoming flights</span></div>
+        <div><strong>{{ stats.cities }}</strong><span>Destinations</span></div>
+        <div><strong>{{ stats.airlines }}</strong><span>Airlines</span></div>
+        <div><strong>24x7</strong><span>E-ticket access</span></div>
+    </div>
+
+    {% if popular %}
+    <h2 class="section-title">Popular routes</h2>
+    <div class="popular">
+        {% for p in popular %}
+        <a class="route-card" href="?source={{ p.source|urlencode }}&destination={{ p.destination|urlencode }}">
+            <span class="codes">{{ p.sc }} <i>&#9992;</i> {{ p.dc }}</span>
+            <strong>{{ p.source }} &rarr; {{ p.destination }}</strong>
+            <span class="from">from <b>&#8377;{{ p.low|floatformat:0 }}</b></span>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <h2 class="section-title">Why Prem Airlines</h2>
+    <div class="features">
+        <div class="card feature"><div class="ico">&#128186;</div><h3>Pick Your Seat</h3><p>Choose from Business, Premium Economy or Economy on a live seat map.</p></div>
+        <div class="card feature"><div class="ico">&#127860;</div><h3>Meals &amp; Baggage</h3><p>Add meals and extra baggage at booking, with the price updating instantly.</p></div>
+        <div class="card feature"><div class="ico">&#128179;</div><h3>Secure Payment</h3><p>Pay by card, UPI, net banking or wallet.</p></div>
+        <div class="card feature"><div class="ico">&#127903;</div><h3>Instant E-Ticket</h3><p>Get a printable boarding pass right after payment.</p></div>
+    </div>
+
+    <h2 class="section-title">Current offers</h2>
+    <div class="offers">
+        <div class="offer"><b>MEALS</b><span>Meals are included on Prem Airlines and Air India flights.</span></div>
+        <div class="offer"><b>WEEKDAY</b><span>Lowest fares are Tue-Thu. Check the fare strip after you search.</span></div>
+        <div class="offer"><b>UPGRADE</b><span>Business and Premium Economy seats include a complimentary meal.</span></div>
+    </div>
+{% endif %}
+</div>
+<script>
+document.getElementById('swap').addEventListener('click', function () {
+    var f = document.getElementById('searchform');
+    var a = f.source.value; f.source.value = f.destination.value; f.destination.value = a;
+});
+</script>
+{% endblock %}

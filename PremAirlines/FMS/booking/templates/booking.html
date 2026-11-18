@@ -1,0 +1,127 @@
+{% extends 'main.html' %}
+{% block content %}
+<div class="wrap">
+    <div class="steps"><span class="step on">1. Passenger &amp; Seat</span><span class="step">2. Payment</span><span class="step">3. Ticket</span></div>
+    <form action="" method="POST" id="bookform">
+    {% csrf_token %}
+    <div class="book-grid">
+        <div>
+            <div class="card">
+                <h2>Passenger Details</h2>
+                {% if error %}<p class="error">{{ error }}</p>{% endif %}
+                <div class="two">
+                    <div><label>Passenger Name</label>
+                    <input type="text" name="pname" maxlength="30" value="{{ form.pname }}" required></div>
+                    <div><label>Mobile (optional)</label>
+                    <input type="tel" name="phone" maxlength="12" inputmode="numeric" placeholder="10 digit number" value="{{ form.phone }}"></div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top:18px">
+                <h2>Choose Your Seat <span class="count">{{ free }} left</span></h2>
+                <div class="legend">
+                    <span><i class="s business"></i>Business</span>
+                    <span><i class="s premium"></i>Premium Economy</span>
+                    <span><i class="s economy"></i>Economy</span>
+                    <span><i class="s taken"></i>Taken</span>
+                    <span><i class="s sel"></i>Selected</span>
+                </div>
+                <div class="plane">
+                    <div class="cockpit">FRONT</div>
+                    {% for r in rows %}
+                    <div class="seat-row {{ r.cls }}">
+                        {% for s in r.left %}
+                        <label class="seat {{ r.cls }} {% if s.taken %}taken{% endif %}">
+                            <input type="radio" name="snum" value="{{ s.id }}" data-cls="{{ r.cls }}" {% if s.taken %}disabled{% endif %} {% if form.snum == s.id %}checked{% endif %}><span>{{ s.id }}</span>
+                        </label>
+                        {% endfor %}
+                        <span class="aisle">{{ r.n }}</span>
+                        {% for s in r.right %}
+                        <label class="seat {{ r.cls }} {% if s.taken %}taken{% endif %}">
+                            <input type="radio" name="snum" value="{{ s.id }}" data-cls="{{ r.cls }}" {% if s.taken %}disabled{% endif %} {% if form.snum == s.id %}checked{% endif %}><span>{{ s.id }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="card" style="margin-top:18px">
+                <h2>Extras</h2>
+                <div class="two">
+                    <div>
+                        <label>Meal preference</label>
+                        <select name="meal" id="meal">
+                            {% for v, l in meals %}<option value="{{ v }}" {% if form.meal == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+                        </select>
+                        <p class="hint" id="mealhint"></p>
+                    </div>
+                    <div>
+                        <label>Extra baggage (5 kg each, &#8377;{{ bag_price }})</label>
+                        <select name="baggage" id="baggage">
+                            {% for n in "01234" %}<option value="{{ n }}" {% if form.baggage|stringformat:"s" == n %}selected{% endif %}>{% if n == "0" %}None{% else %}+{% widthratio n 1 5 %} kg{% endif %}</option>{% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <aside class="card order sticky">
+            <h3>{{ data.source }} &rarr; {{ data.destination }}</h3>
+            <dl>
+                <dt>Flight</dt><dd>{{ data.airline }} {{ data.fligt_number }}</dd>
+                <dt>Departs</dt><dd>{{ data.departure|date:"d M Y, H:i" }}</dd>
+                <dt>Arrives</dt><dd>{{ data.arrival|date:"d M Y, H:i" }}</dd>
+                <dt>Duration</dt><dd>{{ data.duration_display }} &middot; {{ data.stops_display }}</dd>
+                <dt>Aircraft</dt><dd>{{ data.aircraft }}</dd>
+                <dt>Seat</dt><dd id="o-seat">Not selected</dd>
+                <dt>Class</dt><dd id="o-class">&mdash;</dd>
+            </dl>
+            <dl class="prices">
+                <dt>Base fare</dt><dd id="o-fare">&#8377;{{ data.price|floatformat:0 }}</dd>
+                <dt>Meal</dt><dd id="o-meal">&#8377;0</dd>
+                <dt>Baggage</dt><dd id="o-bag">&#8377;0</dd>
+                <dt>GST (5%)</dt><dd id="o-tax">&#8377;0</dd>
+            </dl>
+            <div class="total"><span>Total</span><strong id="o-total">&#8377;{{ data.price|floatformat:0 }}</strong></div>
+            <button type="submit" class="btn btn-gold block" id="go">Continue to Payment</button>
+        </aside>
+    </div>
+    </form>
+</div>
+<script>
+(function () {
+    var base = {{ data.price|stringformat:"f" }};
+    var mult = {{ mult|safe }};
+    var mealPrice = {{ meal_price|safe }};
+    var bagPrice = {{ bag_price }};
+    var included = {{ meal_included|yesno:"true,false" }};
+    var names = {economy: 'Economy', premium: 'Premium Economy', business: 'Business'};
+    var fmt = function (n) { return '\u20B9' + Math.round(n).toLocaleString('en-IN'); };
+
+    function update() {
+        var sel = document.querySelector('input[name="snum"]:checked');
+        var cls = sel ? sel.dataset.cls : 'economy';
+        var fare = Math.round(base * mult[cls.toUpperCase()]);
+        var meal = document.getElementById('meal').value;
+        var free = included || cls !== 'economy';
+        var mc = free ? 0 : mealPrice[meal];
+        var bag = parseInt(document.getElementById('baggage').value, 10) * bagPrice;
+        var sub = fare + mc + bag, tax = Math.round(sub * 0.05);
+        document.getElementById('o-seat').textContent = sel ? sel.value : 'Not selected';
+        document.getElementById('o-class').textContent = sel ? names[cls] : '\u2014';
+        document.getElementById('o-fare').textContent = fmt(fare);
+        document.getElementById('o-meal').textContent = free && meal !== 'NONE' ? 'Included' : fmt(mc);
+        document.getElementById('o-bag').textContent = fmt(bag);
+        document.getElementById('o-tax').textContent = fmt(tax);
+        document.getElementById('o-total').textContent = fmt(sub + tax);
+        document.getElementById('mealhint').textContent = free ? 'Meal is complimentary for your fare.' : 'Meal charged extra on this fare.';
+    }
+    document.querySelectorAll('input[name="snum"], #meal, #baggage').forEach(function (e) { e.addEventListener('change', update); });
+    document.getElementById('bookform').addEventListener('submit', function (ev) {
+        if (!document.querySelector('input[name="snum"]:checked')) { ev.preventDefault(); alert('Please pick a seat from the seat map.'); }
+    });
+    update();
+})();
+</script>
+{% endblock %}

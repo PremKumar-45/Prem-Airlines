@@ -1,0 +1,25 @@
+{% extends 'main.html' %}
+
+{% block content %}
+<div class="wrap narrow">
+    <div class="card">
+        <h2>Login to Prem Airlines</h2>
+        {% if error %}
+            <p class="error">{{error}}</p>
+        {% endif %}
+        <form action="" method="POST">
+            {% csrf_token %}
+            <label for="">Username:</label>
+            <input type="text" name="uname" required>
+            
+            <label for="">Password:</label>
+            <input type="password" name="password"  required>
+    
+            <button type="submit" class="btn btn-gold block">Login</button>
+
+        </form>
+        
+      <p>Don't have an Account? <a href="{% url 'register' %}">Register</a></p>
+    </div>
+</div>
+{% endblock %}

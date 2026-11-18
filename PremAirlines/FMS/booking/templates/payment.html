@@ -1,0 +1,110 @@
+{% extends 'main.html' %}
+{% block content %}
+<div class="wrap">
+    <div class="steps"><span class="step done">1. Passenger</span><span class="step on">2. Payment</span><span class="step">3. Ticket</span></div>
+    <div class="pay-grid">
+        <div class="card">
+            <h2>Choose Payment Method</h2>
+            {% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+            <form method="POST" id="payform" autocomplete="off">
+                {% csrf_token %}
+                <div class="methods">
+                    {% for value, label in methods %}
+                    <label class="method">
+                        <input type="radio" name="method" value="{{ value }}" {% if selected == value or forloop.first and not selected %}checked{% endif %}>
+                        <span>{{ label }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+
+                <div class="pane" data-pane="CARD">
+                    <label>Card Number</label>
+                    <input type="text" name="card_number" inputmode="numeric" maxlength="23" placeholder="1234 5678 9012 3456">
+                    <label>Name on Card</label>
+                    <input type="text" name="card_name" placeholder="As printed on card">
+                    <div class="two">
+                        <div><label>Expiry</label><input type="text" name="expiry" maxlength="5" placeholder="MM/YY"></div>
+                        <div><label>CVV</label><input type="password" name="cvv" maxlength="4" placeholder="***"></div>
+                    </div>
+                </div>
+
+                <div class="pane" data-pane="UPI">
+                    <label>UPI ID</label>
+                    <input type="text" name="upi_id" placeholder="yourname@bank">
+                </div>
+
+                <div class="pane" data-pane="NETBANKING">
+                    <label>Select Bank</label>
+                    <select name="bank">
+                        <option value="">Choose your bank</option>
+                        <option>State Bank of India</option>
+                        <option>HDFC Bank</option>
+                        <option>ICICI Bank</option>
+                        <option>Axis Bank</option>
+                        <option>Kotak Mahindra Bank</option>
+                        <option>Punjab National Bank</option>
+                    </select>
+                </div>
+
+                <div class="pane" data-pane="WALLET">
+                    <label>Select Wallet</label>
+                    <select name="wallet">
+                        <option value="">Choose your wallet</option>
+                        <option>Paytm</option>
+                        <option>PhonePe</option>
+                        <option>Amazon Pay</option>
+                        <option>Mobikwik</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-gold block">Pay &#8377;{{ booking.amount|floatformat:0 }}</button>
+                <p class="note">Demo payment gateway. No real money is charged and card details are never stored.</p>
+            </form>
+        </div>
+
+        <aside class="card order">
+            <h3>Order Summary</h3>
+            <p class="route">{{ booking.flight.source }} &rarr; {{ booking.flight.destination }}</p>
+            <dl>
+                <dt>Flight</dt><dd>{{ booking.flight.airline }} {{ booking.flight.fligt_number }}</dd>
+                <dt>Departure</dt><dd>{{ booking.flight.departure|date:"d M Y, H:i" }}</dd>
+                <dt>Passenger</dt><dd>{{ booking.passenger_name }}</dd>
+                <dt>Seat</dt><dd>{{ booking.seat_number }} ({{ booking.get_travel_class_display }})</dd>
+                <dt>Meal</dt><dd>{{ booking.get_meal_display }}</dd>
+                {% if booking.extra_baggage %}<dt>Baggage</dt><dd>+{% widthratio booking.extra_baggage 1 5 %} kg</dd>{% endif %}
+            </dl>
+            <div class="total"><span>Total</span><strong>&#8377;{{ booking.amount|floatformat:0 }}</strong></div>
+            <form action="{% url 'cancel' booking.id %}" method="POST">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-ghost block">Cancel Booking</button>
+            </form>
+        </aside>
+    </div>
+</div>
+<script>
+(function () {
+    var radios = document.querySelectorAll('input[name="method"]');
+    var panes = document.querySelectorAll('.pane');
+    function show() {
+        var v = document.querySelector('input[name="method"]:checked');
+        v = v ? v.value : '';
+        panes.forEach(function (p) { p.style.display = p.dataset.pane === v ? 'block' : 'none'; });
+        document.querySelectorAll('.method').forEach(function (m) {
+            m.classList.toggle('active', m.querySelector('input').checked);
+        });
+    }
+    radios.forEach(function (r) { r.addEventListener('change', show); });
+    var cn = document.querySelector('input[name="card_number"]');
+    cn.addEventListener('input', function () {
+        this.value = this.value.replace(/\D/g, '').slice(0, 19).replace(/(.{4})/g, '$1 ').trim();
+    });
+    var ex = document.querySelector('input[name="expiry"]');
+    ex.addEventListener('input', function () {
+        var d = this.value.replace(/\D/g, '').slice(0, 4);
+        this.value = d.length > 2 ? d.slice(0, 2) + '/' + d.slice(2) : d;
+    });
+    show();
+})();
+</script>
+{% endblock %}

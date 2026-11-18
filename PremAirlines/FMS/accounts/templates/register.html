@@ -1,0 +1,36 @@
+{% extends 'main.html' %}
+
+{% block content %}
+
+  <div class="wrap narrow">
+    <div class="card">
+      <h2>Create Your Account</h2>
+      {% if error %}
+        <p class="error"> {{error}} </p>
+      {% endif %}
+      <form action="" method="POST">
+        {% csrf_token %}
+        <label for="">First Name:</label>
+        <input type="text" name="fname" id="" required>
+
+        <label for="">Last Name:</label>
+        <input type="text" name="lname" id="" required>
+
+        <label for="">Username:</label>
+        <input type="text" name="uname" id="" required>
+
+        <label for="">Email:</label>
+        <input type="email" name="email" id="" required>
+
+        <label for="">Password: </label>
+        <input type="password" name="password" id="" required>
+
+        <button type="submit" class="btn btn-gold block">Register</button>
+
+
+      </form>
+      <p>Already have An Account ? <a href="{% url 'login' %}">Login</a></p>
+    </div>
+  </div>
+
+{% endblock %}

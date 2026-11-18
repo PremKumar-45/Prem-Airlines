@@ -1,0 +1,27 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prem Airlines | Fly Premium</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    {% include 'nav.html' %}
+    {% if messages %}
+    <div class="toasts">
+        {% for m in messages %}
+        <div class="toast toast-{{ m.tags }}">{{ m }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <main>
+    {% block content %}
+    {% endblock %}
+    </main>
+    <footer class="footer">
+        <span>&copy; Prem Airlines. Fly premium, arrive refreshed.</span>
+    </footer>
+</body>
+</html>
